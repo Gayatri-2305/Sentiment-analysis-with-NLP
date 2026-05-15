@@ -1,0 +1,77 @@
+import pandas as pd
+import re
+import string
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+reviews = [
+    "The product is excellent",
+    "Very bad experience",
+    "Customer support was helpful",
+    "Worst purchase ever",
+    "Amazing quality and fast delivery",
+    "Not worth the money",
+    "I really liked this product",
+    "Terrible service",
+    "Fantastic experience",
+    "Very disappointing product"
+]
+sentiments = [
+    "positive",
+    "negative",
+    "positive",
+    "negative",
+    "positive",
+    "negative",
+    "positive",
+    "negative",
+    "positive",
+    "negative"
+]
+df = pd.DataFrame({
+    "review": reviews,
+    "sentiment": sentiments
+})
+def clean_text(text):
+    text = text.lower()
+    text = re.sub(r'http\S+', '', text)
+    text = re.sub(r'\d+', '', text)
+    text = text.translate(str.maketrans('', '', string.punctuation))
+    text = text.strip()
+    return text
+df['clean_review'] = df['review'].apply(clean_text)
+X = df['clean_review']
+y = df['sentiment']
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.2,
+    random_state=42
+)
+tfidf = TfidfVectorizer(stop_words='english')
+X_train_tfidf = tfidf.fit_transform(X_train)
+X_test_tfidf = tfidf.transform(X_test)
+model = LogisticRegression()
+model.fit(X_train_tfidf, y_train)
+y_pred = model.predict(X_test_tfidf)
+print("Accuracy Score:")
+print(accuracy_score(y_test, y_pred))
+print("\nClassification Report:")
+print(classification_report(y_test, y_pred))
+print("\nConfusion Matrix:")
+print(confusion_matrix(y_test, y_pred))
+sample_reviews = [
+    "The product quality is amazing",
+    "Worst customer service ever",
+    "Worst Purchase ever",
+    "I really like this product",
+    "Fantastic Experiment",
+    "Not worth the money"
+]
+sample_reviews_clean = [clean_text(review) for review in sample_reviews]
+sample_tfidf = tfidf.transform(sample_reviews_clean)
+predictions = model.predict(sample_tfidf)
+for review, sentiment in zip(sample_reviews, predictions):
+    print("\nReview:", review)
+    print("Predicted Sentiment:", sentiment)
